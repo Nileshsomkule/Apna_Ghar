@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Available Rooms</h2>
+<form method="GET" action="{{ url_for('search') }}" class="row g-2 mb-3">
+  <div class="col-md-4"><input name="city" class="form-control" placeholder="City"></div>
+  <div class="col-md-4"><input name="area" class="form-control" placeholder="Area"></div>
+  <div class="col-md-4"><button class="btn btn-primary w-100">Search</button></div>
+</form>
+
+{% if session.get('role') == 'owner' %}
+<a href="{{ url_for('add_room') }}" class="btn btn-success mb-3">+ Add New Room</a>
+{% endif %}
+
+<div class="row">
+  {% for room in rooms %}
+  <div class="col-md-4 mb-4">
+    <div class="card">
+      <img src="{{ url_for('static', filename='uploads/' + room.room_image) }}" class="card-img-top">
+      <div class="card-body">
+        <h5>{{ room.city }} - {{ room.area }}</h5>
+        <p>Rent: ₹{{ room.rent }}</p>
+        <p>Status: {{ 'Available' if room.available else 'Not Available' }}</p>
+        {% if session.get('role') == 'owner' and session.get('user_id') == room.owner_id %}
+          <a href="{{ url_for('edit_room', id=room.id) }}" class="btn btn-warning btn-sm">Edit</a>
+          <a href="{{ url_for('delete_room', id=room.id) }}" class="btn btn-danger btn-sm">Delete</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
