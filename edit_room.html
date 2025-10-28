@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Edit Room</h2>
+<form method="POST" class="col-md-6 mx-auto">
+  <input name="city" value="{{ room.city }}" class="form-control mb-2">
+  <input name="area" value="{{ room.area }}" class="form-control mb-2">
+  <input name="rent" value="{{ room.rent }}" class="form-control mb-2">
+  <div class="form-check mb-2">
+    <input type="checkbox" name="available" class="form-check-input" {% if room.available %}checked{% endif %}>
+    <label class="form-check-label">Available</label>
+  </div>
+  <button class="btn btn-primary w-100">Update Room</button>
+</form>
+{% endblock %}
