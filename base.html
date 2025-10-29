@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <title>Apna Ghar</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    .room-card img {
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+  </style>
 </head>
 <body class="bg-light">
 
@@ -22,7 +29,7 @@
     </div>
   </nav>
 
-  <!-- Main Content -->
+  <!-- Flash Messages and Main Content -->
   <div class="container mt-4">
     {% with messages = get_flashed_messages() %}
       {% if messages %}
@@ -33,6 +40,43 @@
     {% endwith %}
     {% block content %}{% endblock %}
   </div>
+
+  <!-- Featured Rooms Section -->
+  <section class="container mt-5">
+    <h2 class="text-center mb-4 fw-bold">✨ Featured Rooms</h2>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card room-card shadow-sm">
+          <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c" class="card-img-top" alt="Room 1">
+          <div class="card-body">
+            <h5 class="card-title">Cozy Single Room</h5>
+            <p class="card-text">Perfect for students — includes WiFi, AC, and attached bathroom.</p>
+            <p class="text-success fw-bold">₹5,000/month</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card room-card shadow-sm">
+          <img src="https://images.unsplash.com/photo-1616627456386-2a2ffb9c64c3" class="card-img-top" alt="Room 2">
+          <div class="card-body">
+            <h5 class="card-title">Spacious Double Room</h5>
+            <p class="card-text">Ideal for friends — includes TV, balcony, and 24/7 water supply.</p>
+            <p class="text-success fw-bold">₹8,000/month</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card room-card shadow-sm">
+          <img src="https://images.unsplash.com/photo-1600585154218-9c7c3c1bda2b" class="card-img-top" alt="Room 3">
+          <div class="card-body">
+            <h5 class="card-title">Luxury Apartment</h5>
+            <p class="card-text">Fully furnished 1BHK — includes kitchen, washing machine, and parking.</p>
+            <p class="text-success fw-bold">₹12,000/month</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- About Section -->
   <footer class="bg-dark text-light mt-5 py-4">
@@ -55,7 +99,7 @@
             Hi, I'm <strong>Nilesh Somkule</strong> — a passionate <strong>Python Developer</strong> and <strong>Data Scientist</strong>.  
             I built Apna Ghar to make a real-world impact by simplifying the house-hunting experience for students and young professionals.
           </p>
-          <p>📧 Contact: <a href="mailto:nileshsomkule23@gmail.com" class="text-light">nileshsomkule23@gmail.com</a></p>
+          <p>📧 Contact: <a href="mailto:nileshsomkule@gmail.com" class="text-light">nileshsomkule@gmail.com</a></p>
           <p>📺 YouTube: <a href="https://www.youtube.com/@BC_coder" class="text-light" target="_blank">BC_coder</a></p>
         </div>
       </div>
