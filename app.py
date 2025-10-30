@@ -4,84 +4,76 @@ from flask_socketio import SocketIO
 from werkzeug.utils import secure_filename
 import cloudinary
 import cloudinary.uploader
-import certifi
 import os
 
-# ==================================
-# APP CONFIGURATION
-# ==================================
+# ----------------------------------------
+# Flask App Configuration
+# ----------------------------------------
 app = Flask(__name__)
-app.secret_key = 'apna_ghar_secret'
-
-# SQLite Database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///apnaghar.db'
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# ----------------------------------------
 # Initialize Extensions
+# ----------------------------------------
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins='*')
+socketio = SocketIO(app)
 
-# ==================================
-# CLOUDINARY CONFIGURATION
-# ==================================
-os.environ["SSL_CERT_FILE"] = certifi.where()
-
+# ----------------------------------------
+# Cloudinary Configuration
+# ----------------------------------------
 cloudinary.config(
-    cloud_name="apna-ghar",         # ✅ Your Cloudinary cloud name
-    api_key="238676337565917",      # ✅ Your Cloudinary API key
-    api_secret="InvdU50MQOuMxQsfNEYAxR60FyQ",  # ✅ Your API secret
-    secure=True
+    cloud_name="apna-ghar",           # ✅ Cloud name (replace with your own)
+    api_key="238676337565917",        # ✅ Your API key
+    api_secret="InvdU50MQOuMxQsfNEYAxR60FyQ"  # ✅ Your API secret
 )
 
-# ==================================
-# DATABASE MODELS
-# ==================================
+# ----------------------------------------
+# Database Models
+# ----------------------------------------
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # 'student' or 'owner'
-
+    username = db.Column(db.String(150), nullable=False, unique=True)
+    password = db.Column(db.String(150), nullable=False)
 
 class Room(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    city = db.Column(db.String(100))
-    area = db.Column(db.String(100))
-    rent = db.Column(db.Float)
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    area = db.Column(db.String(100), nullable=False)
+    rent = db.Column(db.Integer, nullable=False)
     available = db.Column(db.Boolean, default=True)
-    room_image = db.Column(db.String(500))  # Cloudinary URL
-    washroom_image = db.Column(db.String(500))  # Cloudinary URL
+    room_image = db.Column(db.String(200))
+    washroom_image = db.Column(db.String(200))
 
-
-# ==================================
-# ROUTES
-# ==================================
-
+# ----------------------------------------
+# Routes
+# ----------------------------------------
 @app.route('/')
 def home():
     rooms = Room.query.filter_by(available=True).all()
-    return render_template('index.html', rooms=rooms)
+    return render_template('home.html', rooms=rooms)
 
-
-# ----------- REGISTER -----------
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        role = request.form['role']
 
-        new_user = User(username=username, password=password, role=role)
-        db.session.add(new_user)
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash('Username already exists!')
+            return redirect(url_for('register'))
+
+        user = User(username=username, password=password)
+        db.session.add(user)
         db.session.commit()
-
-        flash('Registration successful! Please login.')
+        flash('Registration successful! Please log in.')
         return redirect(url_for('login'))
+
     return render_template('register.html')
 
-
-# ----------- LOGIN -----------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -91,122 +83,60 @@ def login():
         user = User.query.filter_by(username=username, password=password).first()
         if user:
             session['user_id'] = user.id
-            session['role'] = user.role
             flash('Login successful!')
             return redirect(url_for('home'))
         else:
-            flash('Invalid username or password!')
+            flash('Invalid credentials!')
+
     return render_template('login.html')
 
-
-# ----------- LOGOUT -----------
 @app.route('/logout')
 def logout():
-    session.clear()
-    flash('Logged out successfully!')
+    session.pop('user_id', None)
+    flash('You have been logged out!')
     return redirect(url_for('home'))
 
-
-# ----------- ADD ROOM (OWNER ONLY) -----------
 @app.route('/add_room', methods=['GET', 'POST'])
 def add_room():
-    if 'user_id' not in session or session['role'] != 'owner':
-        flash('Only owners can add rooms.')
+    if 'user_id' not in session:
+        flash('Please log in to add a room.')
         return redirect(url_for('login'))
 
     if request.method == 'POST':
         city = request.form['city']
         area = request.form['area']
         rent = request.form['rent']
-        available = True if request.form.get('available') else False
+        room_image = request.files['room_image']
+        washroom_image = request.files['washroom_image']
 
-        room_img = request.files['room_image']
-        wash_img = request.files['washroom_image']
+        # Upload images to Cloudinary
+        room_upload = cloudinary.uploader.upload(room_image)
+        washroom_upload = cloudinary.uploader.upload(washroom_image)
 
-        # ✅ Upload images to Cloudinary
-        try:
-            room_upload = cloudinary.uploader.upload(room_img)
-            wash_upload = cloudinary.uploader.upload(wash_img)
-            room_url = room_upload['secure_url']
-            wash_url = wash_upload['secure_url']
-        except Exception as e:
-            flash(f"Image upload failed: {e}")
-            return redirect(url_for('add_room'))
-
-        # Save to DB
         new_room = Room(
             owner_id=session['user_id'],
             city=city,
             area=area,
             rent=rent,
-            available=available,
-            room_image=room_url,
-            washroom_image=wash_url
+            room_image=room_upload['secure_url'],
+            washroom_image=washroom_upload['secure_url']
         )
+
         db.session.add(new_room)
         db.session.commit()
-
-        socketio.emit('room_update', {'msg': 'New room added!'}, broadcast=True)
         flash('Room added successfully!')
         return redirect(url_for('home'))
 
     return render_template('add_room.html')
 
+# ----------------------------------------
+# Create Database if Missing
+# ----------------------------------------
+with app.app_context():
+    db.create_all()
 
-# ----------- EDIT ROOM -----------
-@app.route('/edit_room/<int:id>', methods=['GET', 'POST'])
-def edit_room(id):
-    room = Room.query.get_or_404(id)
-    if 'user_id' not in session or session['role'] != 'owner' or room.owner_id != session['user_id']:
-        flash('Unauthorized access!')
-        return redirect(url_for('home'))
-
-    if request.method == 'POST':
-        room.city = request.form['city']
-        room.area = request.form['area']
-        room.rent = request.form['rent']
-        room.available = True if request.form.get('available') else False
-        db.session.commit()
-        flash('Room updated successfully!')
-        return redirect(url_for('home'))
-
-    return render_template('edit_room.html', room=room)
-
-
-# ----------- DELETE ROOM -----------
-@app.route('/delete_room/<int:id>')
-def delete_room(id):
-    room = Room.query.get_or_404(id)
-    if 'user_id' not in session or session['role'] != 'owner' or room.owner_id != session['user_id']:
-        flash('Unauthorized access!')
-        return redirect(url_for('home'))
-
-    db.session.delete(room)
-    db.session.commit()
-    flash('Room deleted successfully!')
-    return redirect(url_for('home'))
-
-
-# ----------- SEARCH ROOM -----------
-@app.route('/search')
-def search():
-    city = request.args.get('city')
-    area = request.args.get('area')
-
-    rooms = Room.query
-    if city:
-        rooms = rooms.filter(Room.city.ilike(f'%{city}%'))
-    if area:
-        rooms = rooms.filter(Room.area.ilike(f'%{area}%'))
-    rooms = rooms.filter_by(available=True).all()
-
-    return render_template('index.html', rooms=rooms)
-
-
-# ==================================
-# MAIN ENTRY POINT
-# ==================================
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    socketio.run(app, debug=True)
+# ----------------------------------------
+# Run App
+# ----------------------------------------
+if __name__ == "__main__":
+    socketio.run(app, host="0.0.0.0", port=5000)
