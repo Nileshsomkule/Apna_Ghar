@@ -6,6 +6,8 @@ import cloudinary
 import cloudinary.uploader
 import os
 
+# here we create code for room check
+
 # ----------------------------------------
 # Flask App Configuration
 # ----------------------------------------
@@ -26,7 +28,8 @@ socketio = SocketIO(app)
 cloudinary.config(
     cloud_name="apna-ghar",           # ✅ Cloud name (replace with your own)
     api_key="238676337565917",        # ✅ Your API key
-    api_secret="InvdU50MQOuMxQsfNEYAxR60FyQ"  # ✅ Your API secret
+    api_secret="InvdU50MQOuMxQsfNEYAxR60FyQ",  # ✅ Your API secret
+    secure = True
 )
 
 # ----------------------------------------
@@ -140,6 +143,6 @@ with app.app_context():
 # ----------------------------------------
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # ✅ Create database and tables if they don't exist
+        db.create_all()  # Ensures the database and tables are created on Render too
     socketio.run(app, debug=True)
 
